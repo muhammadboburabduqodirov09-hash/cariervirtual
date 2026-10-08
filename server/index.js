@@ -488,12 +488,21 @@ async function authorizeMessageRecipient(sender, recipientId) {
   if (sender.role === "admin") {
     return User.findOne({ _id: recipientId, role: { $ne: "admin" } }).select("_id email role displayName status").lean();
   }
-  if (!sender.familyId || !["parent", "child"].includes(sender.role)) return null;
-  const recipientRole = sender.role === "parent" ? "child" : "parent";
-  return User.findOne({ _id: recipientId, familyId: sender.familyId, role: recipientRole }).select("_id email role displayName status").lean();
+  if (!["parent", "child"].includes(sender.role)) return null;
+  const eligibleRecipients = [{ role: "admin" }];
+  if (sender.familyId) {
+    eligibleRecipients.push({
+      familyId: sender.familyId,
+      role: sender.role === "parent" ? "child" : "parent",
+    });
+  }
+  return User.findOne({ _id: recipientId, $or: eligibleRecipients })
+    .select("_id email role displayName status")
+    .lean();
 }
 
 app.get("/api/messages/contacts", authRequired, async (req, res) => {
+  let contacts;
   if (req.user.role === "admin") {
     const query = typeof req.query.q === "string" ? req.query.q.trim().slice(0, 100) : "";
     const filter = { _id: { $ne: req.user._id }, role: { $ne: "admin" } };
@@ -504,13 +513,34 @@ app.get("/api/messages/contacts", authRequired, async (req, res) => {
         { displayName: { $regex: safeQuery, $options: "i" } },
       ];
     }
-    const contacts = await User.find(filter).sort({ displayName: 1 }).limit(200).select("email role displayName status").lean();
-    return res.json({ contacts });
+    contacts = await User.find(filter).sort({ displayName: 1 }).limit(200).select("email role displayName status").lean();
+  } else if (["parent", "child"].includes(req.user.role)) {
+    const familyContacts = req.user.familyId
+      ? await User.find({
+        familyId: req.user.familyId,
+        role: req.user.role === "parent" ? "child" : "parent",
+      }).select("email role displayName status").lean()
+      : [];
+    const adminContact = await User.findOne({ role: "admin" }).select("email role displayName status").lean();
+    contacts = [...familyContacts, ...(adminContact ? [adminContact] : [])];
+  } else {
+    contacts = [];
   }
-  if (!req.user.familyId || !["parent", "child"].includes(req.user.role)) return res.json({ contacts: [] });
-  const otherRole = req.user.role === "parent" ? "child" : "parent";
-  const contact = await User.findOne({ familyId: req.user.familyId, role: otherRole }).select("email role displayName status").lean();
-  res.json({ contacts: contact ? [contact] : [] });
+
+  const unreadBySender = await Message.aggregate([
+    { $match: { toUserId: req.user._id, readAt: null } },
+    { $group: { _id: "$fromUserId", count: { $sum: 1 } } },
+  ]);
+  const unreadCounts = new Map(unreadBySender.map((item) => [String(item._id), item.count]));
+  const totalUnread = unreadBySender.reduce((sum, item) => sum + item.count, 0);
+  res.json({
+    contacts: contacts.map((contact) => ({
+      ...contact,
+      id: String(contact._id),
+      unreadCount: unreadCounts.get(String(contact._id)) || 0,
+    })),
+    totalUnread,
+  });
 });
 
 app.get("/api/messages/:recipientId", authRequired, async (req, res) => {

@@ -25,13 +25,15 @@ export default function ChatWidget({ account, role }) {
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState("");
+  const [unreadCount, setUnreadCount] = useState(0);
   const endRef = useRef(null);
 
   const loadContacts = useCallback(async () => {
     try {
       const params = role === "admin" && search.trim() ? `?q=${encodeURIComponent(search.trim())}` : "";
-      const { contacts: nextContacts } = await chatRequest(`/api/messages/contacts${params}`);
+      const { contacts: nextContacts, totalUnread = 0 } = await chatRequest(`/api/messages/contacts${params}`);
       setContacts(nextContacts);
+      setUnreadCount(totalUnread);
       setSelected((current) => nextContacts.some((item) => contactId(item) === current) ? current : "");
     } catch (requestError) {
       setError(requestError.message);
@@ -47,16 +49,17 @@ export default function ChatWidget({ account, role }) {
       const { messages: nextMessages } = await chatRequest(`/api/messages/${encodeURIComponent(recipientId)}`);
       setMessages(nextMessages);
       setError("");
+      await loadContacts();
     } catch (requestError) {
       setError(requestError.message);
     }
-  }, []);
+  }, [loadContacts]);
 
   useEffect(() => {
-    if (!open) return undefined;
-    const timer = window.setTimeout(loadContacts, 220);
-    return () => window.clearTimeout(timer);
-  }, [loadContacts, open]);
+    loadContacts();
+    const timer = window.setInterval(loadContacts, 5000);
+    return () => window.clearInterval(timer);
+  }, [loadContacts]);
 
   useEffect(() => {
     if (!open || !selected) {
@@ -106,11 +109,12 @@ export default function ChatWidget({ account, role }) {
           {role === "admin" && <label className="chat-search"><Search size={14} /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Find an account" aria-label="Find an account to message" /></label>}
           {contacts.length > 0 ? (
             <select value={selected} onChange={(event) => setSelected(event.target.value)} aria-label="Choose a contact">
-              <option value="">Choose {role === "admin" ? "an account" : "your family contact"}</option>
-              {contacts.map((contact) => <option key={contactId(contact)} value={contactId(contact)}>{contact.displayName} · {contact.role}{contact.status === "suspended" ? " (suspended)" : ""}</option>)}
+              <option value="">Choose {role === "admin" ? "an account" : "a contact"}</option>
+              {contacts.map((contact) => <option key={contactId(contact)} value={contactId(contact)}>{contact.displayName} · {contact.role}{contact.unreadCount ? ` (${contact.unreadCount} unread)` : ""}{contact.status === "suspended" ? " (suspended)" : ""}</option>)}
             </select>
           ) : <span>{role === "admin" ? "No matching accounts." : "Your family contact is not linked yet."}</span>}
         </div>
+        {selectedContact?.role === "admin" && <p className="chat-admin-note">Official message from your platform administrator.</p>}
         {selectedContact && <div className="chat-selected-contact"><b>{selectedContact.displayName}</b><span>{selectedContact.email}</span></div>}
         <div className="chat-messages" aria-live="polite">
           {!selected && <p className="chat-empty">Choose a contact to open a private conversation.</p>}
@@ -133,6 +137,7 @@ export default function ChatWidget({ account, role }) {
       </section>}
       <button className={`chat-launcher ${role === "admin" ? "admin-chat-launcher" : ""}`} onClick={() => setOpen((current) => !current)} aria-label={open ? "Close messages" : "Open messages"}>
         <MessageCircle size={19} /><span>{open ? "Close" : "Messages"}</span>
+        {unreadCount > 0 && <span className="chat-unread-dot" aria-label={`${unreadCount} unread message${unreadCount === 1 ? "" : "s"}`} title={`${unreadCount} unread message${unreadCount === 1 ? "" : "s"}`}>{unreadCount > 9 ? "9+" : unreadCount}</span>}
       </button>
     </>
   );
