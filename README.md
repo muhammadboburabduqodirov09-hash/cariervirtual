@@ -30,7 +30,7 @@ Copy `.env.example` to `.env` the first time you configure the project. If a `.e
 - `SESSION_SECRET` — a private random value of at least 32 characters. Generate one with `node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"`.
 - `ADMIN_EMAIL` and `ADMIN_PASSWORD` — the initial administrator login. Use a unique password of at least 12 characters. The admin account is created the first time the server starts; admin accounts cannot be registered from the website.
 - `API_PORT` — optional; defaults to `3001`.
-- `CLIENT_ORIGINS` — comma-separated browser origins permitted to call the API with cookies. Set this to the exact frontend origin(s), including scheme and port, for local or deployed use.
+- `CLIENT_ORIGINS` — optional comma-separated additional browser origins permitted to call the API with cookies. The API allows `http://localhost:5173`, `https://cariervirtual.onrender.com`, `https://cariervirtual.vercel.app`, and HTTPS `*.vercel.app` origins by default.
 
 `MONGODB_URI` accepts a MongoDB local URI (`mongodb://...`) or Atlas SRV URI (`mongodb+srv://...`). MongoDB Compass is a desktop client, not a database server: connect Compass to the same database URI to inspect the collections while the app connects through Mongoose. For Atlas, make sure the database user's password is URL-encoded in the connection string, and that the database network access list permits your development IP.
 

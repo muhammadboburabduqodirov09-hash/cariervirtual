@@ -1,6 +1,7 @@
 import "dotenv/config";
 import bcrypt from "bcryptjs";
 import MongoStore from "connect-mongo";
+import cors from "cors";
 import express from "express";
 import { rateLimit } from "express-rate-limit";
 import session from "express-session";
@@ -10,29 +11,36 @@ const PORT = Number(process.env.PORT || process.env.API_PORT || 3001);
 const MONGODB_URI = process.env.MONGODB_URI;
 const SESSION_SECRET = process.env.SESSION_SECRET;
 const isProduction = process.env.NODE_ENV === "production";
-const clientOrigins = new Set(
-  (process.env.CLIENT_ORIGINS || "http://localhost:5173")
+const allowedOrigins = new Set([
+  "http://localhost:5173",
+  "https://cariervirtual.onrender.com",
+  "https://cariervirtual.vercel.app",
+  ...(process.env.CLIENT_ORIGINS || "")
     .split(",")
     .map((origin) => origin.trim().replace(/\/+$/, ""))
     .filter(Boolean),
-);
+]);
 if (!MONGODB_URI || !SESSION_SECRET || SESSION_SECRET.length < 32) {
   console.error("Unable to start the API: configure MONGODB_URI and a SESSION_SECRET of at least 32 characters in .env.");
   process.exit(1);
 }
 const app = express();
-app.use((req, res, next) => {
-  const origin = req.get("origin");
-  if (origin && clientOrigins.has(origin)) {
-    res.setHeader("Access-Control-Allow-Origin", origin);
-    res.setHeader("Access-Control-Allow-Credentials", "true");
-    res.setHeader("Access-Control-Allow-Methods", "GET,POST,PUT,PATCH,DELETE,OPTIONS");
-    res.setHeader("Access-Control-Allow-Headers", "Content-Type");
-    res.vary("Origin");
-  }
-  if (req.method === "OPTIONS" && req.path.startsWith("/api/")) return res.sendStatus(204);
-  next();
-});
+app.use(cors({
+  origin(origin, callback) {
+    let isVercelOrigin = false;
+    if (origin) {
+      try {
+        const parsedOrigin = new URL(origin);
+        isVercelOrigin = parsedOrigin.protocol === "https:" && parsedOrigin.hostname.endsWith(".vercel.app");
+      } catch {
+        isVercelOrigin = false;
+      }
+    }
+    if (!origin || allowedOrigins.has(origin) || isVercelOrigin) return callback(null, true);
+    return callback(new Error("Not allowed by CORS"));
+  },
+  credentials: true,
+}));
 
 const userSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true, lowercase: true, trim: true },
