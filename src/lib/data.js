@@ -53,13 +53,13 @@ export const CAREER_ICONS = {
 export const HABITS = [
   { id: "reading", e: "BookOpen", title: "Read a Book", hint: "e.g. 20 pages of a story book", tint: "bg-sky-100 text-sky-700" },
   { id: "poem", e: "NotebookPen", title: "Learn a Poem / Homework", hint: "Memorise a poem or finish homework", tint: "bg-violet-100 text-violet-700" },
-  { id: "cleanup", e: "House", title: "Room Cleanup / Helping at Home", hint: "Tidy the room, help with chores", tint: "bg-emerald-100 text-emerald-700" },
+  { id: "cleanup", e: "Home", title: "Room Cleanup / Helping at Home", hint: "Tidy the room, help with chores", tint: "bg-emerald-100 text-emerald-700" },
   { id: "coding", e: "Code2", title: "Coding / Skill Practice", hint: "30 minutes of practice", tint: "bg-amber-100 text-amber-700" },
 ];
 export const HABIT_ICONS = {
   reading: "BookOpen",
   poem: "NotebookPen",
-  cleanup: "House",
+  cleanup: "Home",
   coding: "Code2",
 };
 

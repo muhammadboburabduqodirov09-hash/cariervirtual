@@ -1,5 +1,5 @@
 import React from "react";
-import { Bike, Bell, BookOpen, BriefcaseBusiness, Brush, Camera, Cat, Check, CircleHelp, Clock3, Code2, Coffee, Gamepad2, Gift, Goal, Headphones, House, Lightbulb, LockKeyhole, Music, NotebookPen, PawPrint, Plane, ReceiptText, Rocket, ShieldCheck, ShoppingBag, ShoppingBasket, Smartphone, Sparkles, Star, Store, WalletCards } from "lucide-react";
+import { Bike, Bell, BookOpen, BriefcaseBusiness, Brush, Camera, Cat, Check, CircleHelp, Clock3, Code2, Coffee, Gamepad2, Gift, Goal, Headphones, Home, Lightbulb, LockKeyhole, Music, NotebookPen, PawPrint, Plane, ReceiptText, Rocket, ShieldCheck, ShoppingBag, ShoppingBasket, Smartphone, Sparkles, Star, Store, WalletCards } from "lucide-react";
 import { CAREER_ICONS, HABIT_ICONS } from "../lib/data";
 
 const icons = {
@@ -19,7 +19,7 @@ const icons = {
   Gift,
   Goal,
   Headphones,
-  House,
+  Home,
   Lightbulb,
   LockKeyhole,
   Music,
@@ -63,7 +63,7 @@ const symbolIcons = {
   "⌚": Clock3, "🎧": Sparkles, "⚽": Goal, "🏀": Goal, "🧸": PawPrint,
   "📷": Star, "🛴": Bike, "🎨": Brush, "📚": BookOpen, "🐶": PawPrint,
   "✈️": Rocket, "✈": Rocket, "🍿": ShoppingBasket, "☔": ShieldCheck,
-  Bike, Bell, BookOpen, Camera, Clock3, Code2, Coffee, Gamepad2, Gift, Goal, Headphones, House,
+  Bike, Bell, BookOpen, Camera, Clock3, Code2, Coffee, Gamepad2, Gift, Goal, Headphones, Home,
   LockKeyhole, Music, NotebookPen, PawPrint, Plane, ShieldCheck, ShoppingBag, ShoppingBasket,
   Smartphone, Sparkles, Star, Store, WalletCards,
 };

@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowRight, BadgeCheck, BookOpen, BriefcaseBusiness, ChartNoAxesCombined, CircleHelp, Coins, House, LogOut, Settings, ShieldCheck, Sparkles } from "lucide-react";
+import { ArrowRight, BadgeCheck, BarChart3, BookOpen, BriefcaseBusiness, CircleHelp, Coins, Home, LogOut, Settings, ShieldCheck, Sparkles } from "lucide-react";
 import { useAppState, initialState } from "./lib/store";
 import { calc, categoryOf } from "./lib/data";
 import Onboarding from "./components/Onboarding";
@@ -14,15 +14,15 @@ import WorkspaceSettings from "./components/WorkspaceSettings";
 import ChatWidget from "./components/ChatWidget";
 
 const PARENT_LINKS = [
-  { id: "overview", label: "Overview", icon: House },
+  { id: "overview", label: "Overview", icon: Home },
   { id: "tasks", label: "Task planner", icon: BriefcaseBusiness },
   { id: "approvals", label: "Approvals", icon: BadgeCheck },
   { id: "controls", label: "Budget & vouchers", icon: Coins },
 ];
 const CHILD_LINKS = [
-  { id: "overview", label: "My overview", icon: House },
+  { id: "overview", label: "My overview", icon: Home },
   { id: "tasks", label: "My tasks", icon: BookOpen },
-  { id: "goals", label: "Savings goals", icon: ChartNoAxesCombined },
+  { id: "goals", label: "Savings goals", icon: BarChart3 },
   { id: "vouchers", label: "Family vouchers", icon: BadgeCheck },
 ];
 
