@@ -2,9 +2,10 @@ import React, { useCallback, useEffect, useState } from "react";
 import { Activity, ArrowDownToLine, ArrowLeft, ArrowRight, ArrowUpRight, BadgeCheck, CircleCheck, CirclePause, Database, LayoutDashboard, LogOut, RefreshCw, Search, Settings, ShieldCheck, UserRound, Users, X } from "lucide-react";
 import WorkspaceSettings from "./WorkspaceSettings";
 import ChatWidget from "./ChatWidget";
+import { apiUrl } from "../lib/api";
 
 async function adminRequest(path, options = {}) {
-  const response = await fetch(path, {
+  const response = await fetch(apiUrl(path), {
     ...options,
     credentials: "include",
     headers: { ...(options.body ? { "Content-Type": "application/json" } : {}), ...options.headers },

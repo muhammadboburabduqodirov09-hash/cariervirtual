@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowRight, BadgeCheck, BarChart3, BookOpen, BriefcaseBusiness, CircleHelp, Coins, Home, LogOut, Settings, ShieldCheck, Sparkles } from "lucide-react";
 import { useAppState, initialState } from "./lib/store";
+import { apiUrl } from "./lib/api";
 import { calc, categoryOf } from "./lib/data";
 import Onboarding from "./components/Onboarding";
 import AdminDashboard from "./components/AdminDashboard";
@@ -27,7 +28,7 @@ const CHILD_LINKS = [
 ];
 
 async function requestApi(path, options = {}) {
-  const response = await fetch(path, {
+  const response = await fetch(apiUrl(path), {
     ...options,
     credentials: "include",
     headers: { ...(options.body ? { "Content-Type": "application/json" } : {}), ...options.headers },

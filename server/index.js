@@ -10,11 +10,29 @@ const PORT = Number(process.env.PORT || process.env.API_PORT || 3001);
 const MONGODB_URI = process.env.MONGODB_URI;
 const SESSION_SECRET = process.env.SESSION_SECRET;
 const isProduction = process.env.NODE_ENV === "production";
+const clientOrigins = new Set(
+  (process.env.CLIENT_ORIGINS || "http://localhost:5173")
+    .split(",")
+    .map((origin) => origin.trim().replace(/\/+$/, ""))
+    .filter(Boolean),
+);
 if (!MONGODB_URI || !SESSION_SECRET || SESSION_SECRET.length < 32) {
   console.error("Unable to start the API: configure MONGODB_URI and a SESSION_SECRET of at least 32 characters in .env.");
   process.exit(1);
 }
 const app = express();
+app.use((req, res, next) => {
+  const origin = req.get("origin");
+  if (origin && clientOrigins.has(origin)) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+    res.setHeader("Access-Control-Allow-Credentials", "true");
+    res.setHeader("Access-Control-Allow-Methods", "GET,POST,PUT,PATCH,DELETE,OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+    res.vary("Origin");
+  }
+  if (req.method === "OPTIONS" && req.path.startsWith("/api/")) return res.sendStatus(204);
+  next();
+});
 
 const userSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true, lowercase: true, trim: true },
