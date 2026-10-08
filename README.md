@@ -43,6 +43,8 @@ npm run dev      # Vite site at http://localhost:5173; /api requests are proxied
 
 The API must be running and connected to MongoDB for account registration, sign-in and admin features to work. To create a parent account, choose **Parent space** and register. Copy the family code from the parent overview, then register the child's account under **Child space** using that code. Use the configured admin email and password from **Administrator sign in**.
 
+If registration reports a 404, open `http://localhost:3001/api/health` and confirm it returns JSON with `"ok": true` and `"database": true`. Start `npm run server` in a separate terminal and resolve any startup error before using the website. Open the Vite website at `http://localhost:5173`; its `/api` proxy uses `PORT`, then `API_PORT`, then `3001`, matching the API server. The Vite proxy is development-only; deployed sites must proxy `/api` to the Express server as described below.
+
 ```bash
 npm run build    # production frontend build in dist/
 ```
