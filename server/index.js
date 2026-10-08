@@ -6,8 +6,7 @@ import { rateLimit } from "express-rate-limit";
 import session from "express-session";
 import mongoose from "mongoose";
 import { randomBytes, randomUUID } from "node:crypto";
-
-const PORT = Number(process.env.API_PORT || 3001);
+const PORT = Number(process.env.PORT || process.env.API_PORT || 3001);
 const MONGODB_URI = process.env.MONGODB_URI;
 const SESSION_SECRET = process.env.SESSION_SECRET;
 const isProduction = process.env.NODE_ENV === "production";
