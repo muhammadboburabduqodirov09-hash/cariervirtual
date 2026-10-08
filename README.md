@@ -25,7 +25,7 @@ Use a local MongoDB server or create a database with MongoDB Atlas and copy its 
 
 Copy `.env.example` to `.env` the first time you configure the project. If a `.env` already exists, keep it and add the server settings from the example; do not overwrite existing keys. Set:
 
-- `VITE_API_URL` — the API base URL exposed to the browser (defaults to `http://localhost:3001`). This is a public URL, not a secret. Restart Vite after changing it.
+- `VITE_API_URL` — the API base URL exposed to the browser (defaults to `https://cariervirtual.onrender.com`). For local API development, set it to `http://localhost:3001`. This is a public URL, not a secret. Restart Vite after changing it.
 - `MONGODB_URI` — your local or Atlas connection string.
 - `SESSION_SECRET` — a private random value of at least 32 characters. Generate one with `node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"`.
 - `ADMIN_EMAIL` and `ADMIN_PASSWORD` — the initial administrator login. Use a unique password of at least 12 characters. The admin account is created the first time the server starts; admin accounts cannot be registered from the website.
