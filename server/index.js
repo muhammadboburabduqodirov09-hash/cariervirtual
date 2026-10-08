@@ -6,7 +6,7 @@ import express from "express";
 import { rateLimit } from "express-rate-limit";
 import session from "express-session";
 import mongoose from "mongoose";
-import { randomBytes, randomUUID } from "node:crypto";
+import { createHash, randomBytes, randomUUID } from "node:crypto";
 const PORT = Number(process.env.PORT || process.env.API_PORT || 3001);
 const MONGODB_URI = process.env.MONGODB_URI;
 const SESSION_SECRET = process.env.SESSION_SECRET;
@@ -59,11 +59,17 @@ const messageSchema = new mongoose.Schema({
   content: { type: String, required: true, maxlength: 2000 },
   readAt: { type: Date, default: null },
 }, { timestamps: true });
+const tabSessionSchema = new mongoose.Schema({
+  tokenHash: { type: String, required: true, unique: true },
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true, index: true },
+  expiresAt: { type: Date, required: true, expires: 0 },
+}, { timestamps: true });
 
 const User = mongoose.model("User", userSchema);
 const Family = mongoose.model("Family", familySchema);
 const AuditEvent = mongoose.model("AuditEvent", auditSchema);
 const Message = mongoose.model("Message", messageSchema);
+const TabSession = mongoose.model("TabSession", tabSessionSchema);
 
 const defaultWorkspace = (childName = "") => ({
   onboarded: true,
@@ -107,11 +113,37 @@ const regenerateSession = (req) => new Promise((resolve, reject) => {
 const saveSession = (req) => new Promise((resolve, reject) => {
   req.session.save((error) => error ? reject(error) : resolve());
 });
+const createTabSession = async (userId) => {
+  const token = randomBytes(32).toString("hex");
+  await TabSession.create({
+    tokenHash: createHash("sha256").update(token).digest("hex"),
+    userId,
+    expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+  });
+  return token;
+};
 const authRequired = async (req, res, next) => {
-  if (!req.session.userId) return res.status(401).json({ error: "Sign in to continue." });
-  const user = await User.findById(req.session.userId);
+  const providedToken = req.get("x-mvk-session");
+  let user;
+  if (providedToken !== undefined) {
+    if (!/^[a-f0-9]{64}$/i.test(providedToken)) return res.status(401).json({ error: "Your tab session is invalid. Sign in again." });
+    const tabSession = await TabSession.findOne({
+      tokenHash: createHash("sha256").update(providedToken).digest("hex"),
+      expiresAt: { $gt: new Date() },
+    });
+    if (!tabSession) return res.status(401).json({ error: "Your tab session has expired. Sign in again." });
+    req.tabSessionToken = providedToken;
+    user = await User.findById(tabSession.userId);
+  } else {
+    if (!req.session.userId) return res.status(401).json({ error: "Sign in to continue." });
+    user = await User.findById(req.session.userId);
+  }
   if (!user || user.status !== "active") {
-    req.session.destroy(() => {});
+    if (providedToken) {
+      await TabSession.deleteOne({ tokenHash: createHash("sha256").update(providedToken).digest("hex") });
+    } else {
+      req.session.destroy(() => {});
+    }
     return res.status(401).json({ error: "This account is unavailable. Please contact your family administrator." });
   }
   req.user = user;
@@ -323,7 +355,8 @@ app.post("/api/auth/register", accountLimiter, async (req, res) => {
   await regenerateSession(req);
   req.session.userId = user.id;
   await saveSession(req);
-  return res.status(201).json({ user: await publicUser(user), workspace: family.state, version: family.revision });
+  const sessionToken = await createTabSession(user._id);
+  return res.status(201).json({ user: await publicUser(user), workspace: family.state, version: family.revision, sessionToken });
 });
 
 app.post("/api/auth/login", accountLimiter, async (req, res) => {
@@ -340,20 +373,26 @@ app.post("/api/auth/login", accountLimiter, async (req, res) => {
   req.session.userId = user.id;
   await saveSession(req);
   const family = user.familyId ? await Family.findById(user.familyId).select("state revision").lean() : null;
-  return res.json({ user: await publicUser(user), workspace: family?.state || null, version: family?.revision ?? null });
+  const sessionToken = await createTabSession(user._id);
+  return res.json({ user: await publicUser(user), workspace: family?.state || null, version: family?.revision ?? null, sessionToken });
 });
 
 app.get("/api/auth/me", authRequired, async (req, res) => {
   const family = req.user.familyId ? await Family.findById(req.user.familyId).select("state revision").lean() : null;
-  res.json({ user: await publicUser(req.user), workspace: family?.state || null, version: family?.revision ?? null });
+  const sessionToken = req.tabSessionToken || await createTabSession(req.user._id);
+  res.json({ user: await publicUser(req.user), workspace: family?.state || null, version: family?.revision ?? null, sessionToken });
 });
 
 app.post("/api/auth/logout", (req, res, next) => {
-  req.session.destroy((error) => {
+  const providedToken = req.get("x-mvk-session");
+  const removeTabSession = providedToken && /^[a-f0-9]{64}$/i.test(providedToken)
+    ? TabSession.deleteOne({ tokenHash: createHash("sha256").update(providedToken).digest("hex") })
+    : Promise.resolve();
+  removeTabSession.then(() => req.session.destroy((error) => {
     if (error) return next(error);
-    res.clearCookie("mvk.sid", { httpOnly: true, sameSite: "lax", secure: isProduction });
+    res.clearCookie("mvk.sid", { httpOnly: true, sameSite: isProduction ? "none" : "lax", secure: isProduction });
     res.status(204).end();
-  });
+  })).catch(next);
 });
 
 app.get("/api/workspace", authRequired, async (req, res) => {
@@ -698,7 +737,7 @@ async function start() {
   if (!MONGODB_URI) throw new Error("MONGODB_URI is required. Configure it in the server .env file.");
   if (!SESSION_SECRET || SESSION_SECRET.length < 32) throw new Error("SESSION_SECRET must be at least 32 characters.");
   await mongoose.connect(MONGODB_URI);
-  await Promise.all([User.init(), Family.init(), AuditEvent.init(), Message.init()]);
+  await Promise.all([User.init(), Family.init(), AuditEvent.init(), Message.init(), TabSession.init()]);
 
   const adminEmail = process.env.ADMIN_EMAIL?.trim().toLowerCase();
   const adminPassword = process.env.ADMIN_PASSWORD;

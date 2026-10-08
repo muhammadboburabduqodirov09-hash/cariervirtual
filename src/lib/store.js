@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { DEFAULT_GOALS } from "./data";
 
-const KEY = "mvk-state-v2";
+const KEY = "mvk-tab-state-v2";
 
 export const initialState = {
   onboarded: false,
@@ -21,7 +21,7 @@ export const initialState = {
 
 function load() {
   try {
-    const raw = localStorage.getItem(KEY);
+    const raw = sessionStorage.getItem(KEY);
     if (!raw) return initialState;
     const parsed = JSON.parse(raw);
     return { ...initialState, ...parsed, wallet: { ...initialState.wallet, ...(parsed.wallet || {}) } };
@@ -31,31 +31,19 @@ function load() {
 }
 
 /**
- * Shared app state persisted to localStorage.
- * The `storage` event keeps Parent and Child views (and extra tabs) in sync:
- * a task posted by the parent appears on the child's dashboard immediately.
+ * Per-tab workspace cache. MongoDB remains authoritative and the API polling
+ * keeps family members in sync without sharing account state between tabs.
  */
 export function useAppState() {
   const [state, setState] = useState(load);
 
   useEffect(() => {
-    localStorage.setItem(KEY, JSON.stringify(state));
+    sessionStorage.setItem(KEY, JSON.stringify(state));
   }, [state]);
-
-  useEffect(() => {
-    const onStorage = (e) => {
-      if (e.key !== KEY || e.newValue == null) return;
-      try {
-        setState({ ...initialState, ...JSON.parse(e.newValue) });
-      } catch { /* ignore malformed payloads */ }
-    };
-    window.addEventListener("storage", onStorage);
-    return () => window.removeEventListener("storage", onStorage);
-  }, []);
 
   const update = useCallback((fn) => setState((s) => (typeof fn === "function" ? fn(s) : fn)), []);
   const reset = useCallback(() => {
-    localStorage.removeItem(KEY);
+    sessionStorage.removeItem(KEY);
     setState(initialState);
   }, []);
 

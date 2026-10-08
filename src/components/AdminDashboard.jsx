@@ -2,13 +2,13 @@ import React, { useCallback, useEffect, useState } from "react";
 import { Activity, ArrowDownToLine, ArrowLeft, ArrowRight, ArrowUpRight, BadgeCheck, CircleCheck, CirclePause, Database, LayoutDashboard, LogOut, RefreshCw, Search, Settings, ShieldCheck, UserRound, Users, X } from "lucide-react";
 import WorkspaceSettings from "./WorkspaceSettings";
 import ChatWidget from "./ChatWidget";
-import { apiUrl } from "../lib/api";
+import { apiUrl, tabSessionHeaders } from "../lib/api";
 
 async function adminRequest(path, options = {}) {
   const response = await fetch(apiUrl(path), {
     ...options,
     credentials: "include",
-    headers: { ...(options.body ? { "Content-Type": "application/json" } : {}), ...options.headers },
+    headers: { ...(options.body ? { "Content-Type": "application/json" } : {}), ...tabSessionHeaders(), ...options.headers },
   });
   const payload = response.status === 204 ? null : await response.json().catch(() => ({}));
   if (!response.ok) throw new Error(payload?.error || `Request failed (${response.status}).`);

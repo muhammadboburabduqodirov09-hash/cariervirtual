@@ -1,12 +1,12 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { MessageCircle, Search, Send, X } from "lucide-react";
-import { apiUrl } from "../lib/api";
+import { apiUrl, tabSessionHeaders } from "../lib/api";
 
 async function chatRequest(path, options = {}) {
   const response = await fetch(apiUrl(path), {
     ...options,
     credentials: "include",
-    headers: { ...(options.body ? { "Content-Type": "application/json" } : {}), ...options.headers },
+    headers: { ...(options.body ? { "Content-Type": "application/json" } : {}), ...tabSessionHeaders(), ...options.headers },
   });
   const payload = response.status === 204 ? null : await response.json().catch(() => ({}));
   if (!response.ok) throw new Error(payload?.error || `Request failed (${response.status}).`);

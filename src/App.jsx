@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowRight, BadgeCheck, BarChart3, BookOpen, BriefcaseBusiness, CircleHelp, Coins, Home, LogOut, Settings, ShieldCheck, Sparkles } from "lucide-react";
 import { useAppState, initialState } from "./lib/store";
-import { apiUrl } from "./lib/api";
+import { apiUrl, clearTabSession, saveTabSession, tabSessionHeaders } from "./lib/api";
 import { calc, categoryOf } from "./lib/data";
 import Onboarding from "./components/Onboarding";
 import AdminDashboard from "./components/AdminDashboard";
@@ -31,7 +31,7 @@ async function requestApi(path, options = {}) {
   const response = await fetch(apiUrl(path), {
     ...options,
     credentials: "include",
-    headers: { ...(options.body ? { "Content-Type": "application/json" } : {}), ...options.headers },
+    headers: { ...(options.body ? { "Content-Type": "application/json" } : {}), ...tabSessionHeaders(), ...options.headers },
   });
   if (response.status === 204) return null;
   const payload = await response.json().catch(() => ({}));
@@ -257,8 +257,9 @@ export default function App() {
 
   useEffect(() => {
     let current = true;
-    requestApi("/api/auth/me").then(({ user, workspace, version }) => {
+    requestApi("/api/auth/me").then(({ user, workspace, version, sessionToken }) => {
       if (!current) return;
+      saveTabSession(sessionToken);
       setAccount(user);
       setRole(user.role);
       if (workspace && user.role !== "admin") {
@@ -341,6 +342,7 @@ export default function App() {
     const payload = mode === "register"
       ? await requestApi("/api/auth/register", { method: "POST", body: JSON.stringify({ ...form, role: requestedRole }) })
       : await requestApi("/api/auth/login", { method: "POST", body: JSON.stringify({ email: form.email, password: form.password, expectedRole: requestedRole }) });
+    saveTabSession(payload.sessionToken);
     setAccount(payload.user);
     setRole(payload.user.role);
     setStartupError("");
@@ -355,6 +357,7 @@ export default function App() {
   const signOut = async () => {
     try {
       await requestApi("/api/auth/logout", { method: "POST" });
+      clearTabSession();
       setAccount(null);
       setRole(null);
       setWorkspaceReady(false);
