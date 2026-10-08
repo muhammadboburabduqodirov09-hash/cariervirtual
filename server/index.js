@@ -11,15 +11,11 @@ const PORT = Number(process.env.PORT || process.env.API_PORT || 3001);
 const MONGODB_URI = process.env.MONGODB_URI;
 const SESSION_SECRET = process.env.SESSION_SECRET;
 const isProduction = process.env.NODE_ENV === "production";
-const allowedOrigins = new Set([
+const allowedOrigins = [
   "http://localhost:5173",
   "https://cariervirtual.onrender.com",
   "https://cariervirtual.vercel.app",
-  ...(process.env.CLIENT_ORIGINS || "")
-    .split(",")
-    .map((origin) => origin.trim().replace(/\/+$/, ""))
-    .filter(Boolean),
-]);
+];
 if (!MONGODB_URI || !SESSION_SECRET || SESSION_SECRET.length < 32) {
   console.error("Unable to start the API: configure MONGODB_URI and a SESSION_SECRET of at least 32 characters in .env.");
   process.exit(1);
@@ -27,16 +23,10 @@ if (!MONGODB_URI || !SESSION_SECRET || SESSION_SECRET.length < 32) {
 const app = express();
 app.use(cors({
   origin(origin, callback) {
-    let isVercelOrigin = false;
-    if (origin) {
-      try {
-        const parsedOrigin = new URL(origin);
-        isVercelOrigin = parsedOrigin.protocol === "https:" && parsedOrigin.hostname.endsWith(".vercel.app");
-      } catch {
-        isVercelOrigin = false;
-      }
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.indexOf(origin) !== -1 || /\.vercel\.app$/.test(origin)) {
+      return callback(null, true);
     }
-    if (!origin || allowedOrigins.has(origin) || isVercelOrigin) return callback(null, true);
     return callback(new Error("Not allowed by CORS"));
   },
   credentials: true,
@@ -248,7 +238,7 @@ app.use(session({
   store: MongoStore.create({ mongoUrl: MONGODB_URI, collectionName: "sessions", ttl: 60 * 60 * 24 * 7 }),
   cookie: {
     httpOnly: true,
-    sameSite: "lax",
+    sameSite: isProduction ? "none" : "lax",
     secure: isProduction,
     maxAge: 1000 * 60 * 60 * 24 * 7,
   },

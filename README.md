@@ -30,7 +30,6 @@ Copy `.env.example` to `.env` the first time you configure the project. If a `.e
 - `SESSION_SECRET` — a private random value of at least 32 characters. Generate one with `node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"`.
 - `ADMIN_EMAIL` and `ADMIN_PASSWORD` — the initial administrator login. Use a unique password of at least 12 characters. The admin account is created the first time the server starts; admin accounts cannot be registered from the website.
 - `API_PORT` — optional; defaults to `3001`.
-- `CLIENT_ORIGINS` — optional comma-separated additional browser origins permitted to call the API with cookies. The API allows `http://localhost:5173`, `https://cariervirtual.onrender.com`, `https://cariervirtual.vercel.app`, and HTTPS `*.vercel.app` origins by default.
 
 `MONGODB_URI` accepts a MongoDB local URI (`mongodb://...`) or Atlas SRV URI (`mongodb+srv://...`). MongoDB Compass is a desktop client, not a database server: connect Compass to the same database URI to inspect the collections while the app connects through Mongoose. For Atlas, make sure the database user's password is URL-encoded in the connection string, and that the database network access list permits your development IP.
 
@@ -45,7 +44,7 @@ npm run dev      # Vite site at http://localhost:5173; /api requests are proxied
 
 The API must be running and connected to MongoDB for account registration, sign-in and admin features to work. To create a parent account, choose **Parent space** and register. Copy the family code from the parent overview, then register the child's account under **Child space** using that code. Use the configured admin email and password from **Administrator sign in**.
 
-If registration fails, open `http://localhost:3001/api/health` and confirm it returns JSON with `"ok": true` and `"database": true`. Start `npm run server` in a separate terminal and resolve any startup error before using the website. Open the Vite website at `http://localhost:5173`; requests use `VITE_API_URL` and include session cookies. The API allows the configured `CLIENT_ORIGINS` origins. For a deployed frontend, set `VITE_API_URL` to its API URL and `CLIENT_ORIGINS` to the frontend origin. Restart the Vite dev server or rebuild after changing `VITE_API_URL`.
+If registration fails, open `http://localhost:3001/api/health` and confirm it returns JSON with `"ok": true` and `"database": true`. Start `npm run server` in a separate terminal and resolve any startup error before using the website. Open the Vite website at `http://localhost:5173`; requests use `VITE_API_URL` and include session cookies. The API allows the configured local and production origins and Vercel preview domains. For deployments, redeploy the Express API after backend changes and rebuild the frontend after changing `VITE_API_URL`.
 
 ```bash
 npm run build    # production frontend build in dist/
